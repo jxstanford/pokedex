@@ -16,3 +16,9 @@ def client() -> TestClient:
 
     app.dependency_overrides[get_pokedex_repository] = override_repo
     return TestClient(app)
+
+
+@pytest.fixture(scope="session")
+def client_with_db() -> TestClient:
+    app = create_app()
+    return TestClient(app)

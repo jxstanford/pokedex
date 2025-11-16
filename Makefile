@@ -26,6 +26,9 @@ backend-test:
 analyze-test:
 	cd backend && poetry run pytest tests/integration/test_analyze.py -k "returns_matches"
 
+analyze-pgvector:
+	cd backend && PGVECTOR_TESTS=1 poetry run pytest tests/integration/test_analyze_pgvector.py
+
 frontend-test:
 	cd frontend && npm run test -- --run
 

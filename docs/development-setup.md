@@ -31,6 +31,8 @@ This guide explains how to reproduce the local environment required for the Pok�
 - `make backend-test`
 - `make frontend-test`
 - `make mobile-test`
+- `make analyze-test`: Lightweight integration test using the in-memory Pokédex fallback.
+- `make analyze-pgvector`: Full CLIP + pgvector flow (requires Postgres seeded with data and embeddings). Run `PGVECTOR_TESTS=1 make analyze-pgvector` after executing the seeding/embedding scripts.
 
 ## Pokémon Assets
 Metadata and artwork URLs are pulled from PokéAPI (`https://pokeapi.co/api/v2`).
