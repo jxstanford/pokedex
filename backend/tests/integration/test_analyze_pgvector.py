@@ -10,6 +10,7 @@ import asyncio
 import os
 from pathlib import Path
 
+import httpx
 import pytest
 
 from app.database import SessionMaker
@@ -35,7 +36,7 @@ async def _ensure_embeddings_present() -> None:
 
 def test_analyze_pgvector_flow(client_with_db):
     asyncio.run(_ensure_embeddings_present())
-    fixture = Path("tests/fixtures/sample_images/pikachu.png")
+    fixture = _download_fixture()
     with fixture.open("rb") as handle:
         response = client_with_db.post(
             "/api/v1/analyze/",
@@ -46,3 +47,18 @@ def test_analyze_pgvector_flow(client_with_db):
     payload = response.json()
     assert payload["matches"], "Expected at least one match"
     assert payload["matches"][0]["similarity_score"] >= 0
+
+
+def _download_fixture() -> Path:
+    fixture_dir = Path("tests/fixtures/sample_images")
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+    target = fixture_dir / "pikachu.png"
+    if not target.exists():
+        url = (
+            "https://raw.githubusercontent.com/PokeAPI/sprites/master/"
+            "sprites/pokemon/other/official-artwork/25.png"
+        )
+        response = httpx.get(url, timeout=30)
+        response.raise_for_status()
+        target.write_bytes(response.content)
+    return target
