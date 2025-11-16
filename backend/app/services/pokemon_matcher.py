@@ -24,7 +24,11 @@ class PokemonMatcher:
         sorted_matches = sorted(candidates, key=lambda item: item[0], reverse=True)[:top_n]
 
         return [
-            MatchResult(pokemon=pokemon, similarity_score=score, rank=index)
+            MatchResult(
+                pokemon=pokemon,
+                similarity_score=max(0.0, score),
+                rank=index,
+            )
             for index, (score, pokemon) in enumerate(sorted_matches, start=1)
         ]
 
