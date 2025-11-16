@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pokedex
+      POSTGRES_USER: pokedex
+      POSTGRES_PASSWORD: pokedex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pokedex"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

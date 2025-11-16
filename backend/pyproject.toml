@@ -20,6 +20,8 @@ pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
 python-jose = "^3.3.0"
 structlog = "^24.1.0"
+alembic = "^1.13.1"
+tqdm = "^4.66.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
@@ -35,3 +37,5 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 100
 exclude = ["alembic"]
+[tool.pytest.ini_options]
+pythonpath = ["./"]

@@ -2,17 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.dependencies import get_pokedex_repository
 from app.models import Pokemon
 from app.repositories.pokedex_repository import PokedexRepository
 
 router = APIRouter(prefix="/pokemon", tags=["pokemon"])
-
-_pokedex_repository = PokedexRepository()
-
-
-def get_pokedex_repository() -> PokedexRepository:
-    return _pokedex_repository
-
 
 @router.get("/{pokemon_id}", response_model=Pokemon)
 async def get_pokemon(

@@ -2,18 +2,16 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.dependencies import get_pokedex_repository
 from app.repositories.pokedex_repository import PokedexRepository
 
 router = APIRouter(prefix="/health", tags=["health"])
 
-_pokedex_repository = PokedexRepository()
-
-
 @router.get("/")
-async def health() -> dict:
-    pokemon_count = len(await _pokedex_repository.get_all_pokemon())
+async def health(repository: PokedexRepository = Depends(get_pokedex_repository)) -> dict:
+    pokemon_count = len(await repository.get_all_pokemon())
     return {
         "status": "healthy" if pokemon_count else "degraded",
         "timestamp": datetime.utcnow().isoformat() + "Z",

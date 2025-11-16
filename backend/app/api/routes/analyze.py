@@ -3,9 +3,10 @@
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status, Request
 
 from app.api.middleware.rate_limiter import enforce_rate_limit
+from app.dependencies import get_pokedex_repository
 from app.models import AnalysisResult
 from app.repositories.pokedex_repository import PokedexRepository
 from app.services.image_processor import ImageProcessor
@@ -15,15 +16,10 @@ router = APIRouter(prefix="/analyze", tags=["analysis"])
 
 _image_processor = ImageProcessor()
 _matcher = PokemonMatcher()
-_pokedex_repository = PokedexRepository()
-
-
-def get_pokedex_repository() -> PokedexRepository:
-    return _pokedex_repository
-
 
 @router.post("/", response_model=AnalysisResult, status_code=status.HTTP_200_OK)
 async def analyze_image(
+    request: Request,
     image: UploadFile = File(...),
     top_n: int = Query(5, ge=1, le=10),
     _: None = Depends(enforce_rate_limit),
@@ -50,8 +46,18 @@ async def analyze_image(
     matches = _matcher.find_best_matches(embedding, top_n=top_n)
     duration_ms = int((perf_counter() - start) * 1000)
 
-    return AnalysisResult(
+    result = AnalysisResult(
         id=str(uuid4()),
         matches=matches,
         processing_time_ms=duration_ms,
     )
+    if matches:
+        await repository.record_analysis_request(
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            processing_time_ms=duration_ms,
+            top_match_id=matches[0].pokemon.id,
+            top_match_score=matches[0].similarity_score,
+        )
+
+    return result
