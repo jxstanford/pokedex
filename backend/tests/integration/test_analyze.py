@@ -1,10 +1,36 @@
+from __future__ import annotations
+
 from io import BytesIO
 from pathlib import Path
+from typing import Iterator
 
+import httpx
 from fastapi.testclient import TestClient
 from PIL import Image
+import pytest
 
 from app.api.middleware.rate_limiter import reset_rate_limiter
+
+FIXTURE_DIR = Path("tests/fixtures/sample_images")
+FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
+PIKACHU_URL = (
+    "https://raw.githubusercontent.com/PokeAPI/sprites/master/"
+    "sprites/pokemon/other/official-artwork/25.png"
+)
+
+
+@pytest.fixture(scope="module")
+def pikachu_fixture() -> Iterator[Path]:
+    target = FIXTURE_DIR / "pikachu.png"
+    if not target.exists():
+        response = httpx.get(PIKACHU_URL, timeout=30)
+        response.raise_for_status()
+        target.write_bytes(response.content)
+    try:
+        yield target
+    finally:
+        if target.exists():
+            target.unlink()
 
 
 def _make_image() -> BytesIO:
@@ -15,13 +41,12 @@ def _make_image() -> BytesIO:
     return buffer
 
 
-def test_analyze_returns_matches(client: TestClient) -> None:
+def test_analyze_returns_matches(client: TestClient, pikachu_fixture: Path) -> None:
     reset_rate_limiter()
-    fixture = Path("tests/fixtures/sample_images/pikachu.png")
-    with fixture.open("rb") as handle:
+    with pikachu_fixture.open("rb") as handle:
         response = client.post(
             "/api/v1/analyze/",
-            files={"image": (fixture.name, handle, "image/png")},
+            files={"image": (pikachu_fixture.name, handle, "image/png")},
         )
     assert response.status_code == 200
     payload = response.json()
