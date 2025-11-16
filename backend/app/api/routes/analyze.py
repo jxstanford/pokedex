@@ -7,16 +7,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 
 from app.api.middleware.rate_limiter import enforce_rate_limit
 from app.dependencies import get_pokedex_repository
-from app.models import AnalysisResult
+from app.models import AnalysisResult, MatchResult
 from app.repositories.pokedex_repository import PokedexRepository
 from app.services.image_processor import ImageProcessor
-from app.services.pokemon_matcher import PokemonMatcher
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
 
 _image_processor = ImageProcessor()
-_matcher = PokemonMatcher()
-
 @router.post("/", response_model=AnalysisResult, status_code=status.HTTP_200_OK)
 async def analyze_image(
     request: Request,
@@ -34,17 +31,18 @@ async def analyze_image(
             detail={"error": "invalid_image", "message": str(exc)},
         ) from exc
 
-    pokedex = await repository.get_all_pokemon()
-    if not pokedex:
+    start = perf_counter()
+    matches_with_scores = await repository.find_similar_by_embedding(embedding, top_n)
+    if not matches_with_scores:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"error": "service_unavailable", "message": "Pokédex cache is empty"},
         )
-    _matcher.set_catalog(pokedex)
-
-    start = perf_counter()
-    matches = _matcher.find_best_matches(embedding, top_n=top_n)
     duration_ms = int((perf_counter() - start) * 1000)
+    matches = [
+        MatchResult(pokemon=pokemon, similarity_score=score, rank=index)
+        for index, (pokemon, score) in enumerate(matches_with_scores, start=1)
+    ]
 
     result = AnalysisResult(
         id=str(uuid4()),

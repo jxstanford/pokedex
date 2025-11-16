@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Pokemon, PokemonStats
 from app.models.db import PokemonRecord
+from app.services.pokemon_matcher import PokemonMatcher
 
 
 class PokedexRepository:
@@ -96,6 +97,32 @@ class PokedexRepository:
         )
         self._session.add(record)
         await self._session.flush()
+
+    async def find_similar_by_embedding(
+        self,
+        embedding: List[float],
+        top_n: int = 5,
+    ) -> List[Tuple[Pokemon, float]]:
+        if self._session is None:
+            await self._ensure_cache()
+            matcher = PokemonMatcher(list(self._pokemon_by_id.values()))
+            matches = matcher.find_best_matches(embedding, top_n=top_n)
+            return [(match.pokemon, match.similarity_score) for match in matches]
+
+        distance_expr = PokemonRecord.embedding.cosine_distance(embedding)
+        stmt = (
+            select(PokemonRecord, distance_expr.label("distance"))
+            .where(PokemonRecord.embedding.isnot(None))
+            .order_by(distance_expr)
+            .limit(top_n)
+        )
+        result = await self._session.execute(stmt)
+        matches: List[Tuple[Pokemon, float]] = []
+        for record, distance in result.all():
+            pokemon = self._record_to_domain(record)
+            similarity = 1.0 - (distance or 0.0)
+            matches.append((pokemon, max(0.0, similarity)))
+        return matches
 
     async def _ensure_cache(self) -> None:
         if self._pokemon_by_id:
