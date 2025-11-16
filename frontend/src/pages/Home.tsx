@@ -3,17 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import CameraCapture from '../components/CameraCapture';
 import ImageUpload from '../components/ImageUpload';
 import MatchResults from '../components/MatchResults';
+import HistoryList from '../components/HistoryList';
+import Alert from '../components/Alert';
 import { useAnalyze } from '../hooks/useAnalyze';
+import { useHistoryStore } from '../store/history';
 
 const Home = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const mutation = useAnalyze();
+  const addEntry = useHistoryStore((state) => state.addEntry);
+  const historyEntries = useHistoryStore((state) => state.entries);
 
   const handleFile = async (file: File) => {
     setError(null);
     try {
       const result = await mutation.mutateAsync(file);
+      addEntry(result);
       navigate('/results', { state: result });
     } catch (err) {
       setError((err as Error).message);
@@ -30,10 +36,11 @@ const Home = () => {
         <CameraCapture onImageCapture={handleFile} disabled={mutation.isPending} isCapturing={mutation.isPending} />
         <ImageUpload onSelect={handleFile} disabled={mutation.isPending} />
         {mutation.isPending && <p className="text-sm text-slate-600">Analyzing image…</p>}
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <Alert message={error} onClose={() => setError(null)} />}
       </section>
-      <aside className="w-full lg:w-1/2">
+      <aside className="w-full space-y-4 lg:w-1/2">
         <MatchResults matches={mutation.data?.matches ?? []} isLoading={mutation.isPending} />
+        <HistoryList entries={historyEntries} />
       </aside>
     </main>
   );
