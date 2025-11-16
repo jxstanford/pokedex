@@ -8,11 +8,13 @@ interface CameraCaptureProps {
 
 const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }: CameraCaptureProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     return () => {
       stream?.getTracks().forEach((track) => track.stop());
+      setIsReady(false);
     };
   }, [stream]);
 
@@ -29,10 +31,12 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
   }, []);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !isReady) return;
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    const width = videoRef.current.videoWidth || 640;
+    const height = videoRef.current.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext('2d');
     if (!context) return;
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
@@ -60,14 +64,21 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
       </header>
       {stream ? (
         <div className="space-y-3">
-          <video ref={videoRef} autoPlay playsInline className="w-full rounded" />
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            onLoadedMetadata={() => setIsReady(true)}
+            className="w-full rounded"
+          />
           <button
             type="button"
             className="rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
             onClick={capturePhoto}
-            disabled={disabled || isCapturing}
+            disabled={disabled || isCapturing || !isReady}
           >
-            {isCapturing ? 'Capturing…' : 'Capture Photo'}
+            {isCapturing ? 'Capturing…' : isReady ? 'Capture Photo' : 'Camera initializing…'}
           </button>
         </div>
       ) : (
