@@ -1,8 +1,9 @@
+from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 from app.models.pokemon import Pokemon
 
@@ -12,6 +13,10 @@ class MatchResult(BaseModel):
     pokemon: Pokemon
     similarity_score: float = Field(ge=0.0, le=1.0)
     rank: int = Field(ge=1)
+
+    @field_serializer("pokemon")
+    def serialize_pokemon(self, value: Pokemon) -> dict:
+        return asdict(value)
 
 
 class AnalysisResult(BaseModel):
