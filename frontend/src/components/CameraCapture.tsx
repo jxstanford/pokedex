@@ -28,15 +28,28 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
       return;
     }
 
+    const setReady = () => setIsReady(true);
+
     video.srcObject = stream;
-    const handleLoaded = () => setIsReady(true);
-    video.addEventListener('loadedmetadata', handleLoaded);
-    video.play().catch(() => {
-      setCameraError('Unable to start camera playback.');
-    });
+    setIsReady(video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
+    video.addEventListener('loadedmetadata', setReady);
+    video.addEventListener('loadeddata', setReady);
+
+    const playVideo = async () => {
+      try {
+        await video.play();
+        setReady();
+      } catch (err) {
+        console.error('Unable to start camera playback', err);
+        setCameraError('Unable to start camera playback.');
+      }
+    };
+
+    playVideo();
+
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoaded);
-      video.pause();
+      video.removeEventListener('loadedmetadata', setReady);
+      video.removeEventListener('loadeddata', setReady);
     };
   }, [stream]);
 
@@ -55,8 +68,23 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
     }
   }, [isCameraSupported]);
 
-  const capturePhoto = useCallback(() => {
+  const capturePhoto = useCallback(async () => {
     if (!videoRef.current || !isReady) return;
+
+    const track = stream?.getVideoTracks()?.[0];
+    if (track && 'ImageCapture' in window) {
+      try {
+        // @ts-expect-error ImageCapture is available in modern browsers
+        const imageCapture = new ImageCapture(track);
+        const blob = await imageCapture.takePhoto();
+        const file = new File([blob], `capture-${Date.now()}.png`, { type: blob.type || 'image/png' });
+        onImageCapture(file);
+        return;
+      } catch (err) {
+        console.warn('ImageCapture API failed, falling back to canvas', err);
+      }
+    }
+
     const canvas = document.createElement('canvas');
     const width = videoRef.current.videoWidth || 640;
     const height = videoRef.current.videoHeight || 480;
@@ -65,12 +93,25 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
     const context = canvas.getContext('2d');
     if (!context) return;
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
+    const handleBlob = (blob: Blob | null) => {
+      if (!blob) {
+        setCameraError('Failed to capture image from camera.');
+        return;
+      }
       const file = new File([blob], `capture-${Date.now()}.png`, { type: 'image/png' });
       onImageCapture(file);
-    }, 'image/png');
-  }, [onImageCapture]);
+    };
+
+    if (canvas.toBlob) {
+      canvas.toBlob(handleBlob, 'image/png');
+    } else {
+      const dataUrl = canvas.toDataURL('image/png');
+      fetch(dataUrl)
+        .then((res) => res.blob())
+        .then(handleBlob)
+        .catch(() => setCameraError('Failed to capture image from camera.'));
+    }
+  }, [isReady, onImageCapture, stream]);
 
   return (
     <section className="rounded border p-4">
