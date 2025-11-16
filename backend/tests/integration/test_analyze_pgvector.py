@@ -20,13 +20,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
-def _ensure_env_ready(client) -> None:
-    response = client.get("/api/v1/health/")
+async def _ensure_env_ready(client) -> None:
+    response = await client.get("/api/v1/health/")
     assert response.status_code == 200
     payload = response.json()
     pokemon_count = payload["checks"].get("pokemon_count", 0)
@@ -34,11 +29,12 @@ def _ensure_env_ready(client) -> None:
     assert payload["checks"].get("clip_model") == "loaded", "CLIP model not loaded"
 
 
-def test_analyze_pgvector_flow(client_with_db):
-    _ensure_env_ready(client_with_db)
+@pytest.mark.anyio
+async def test_analyze_pgvector_flow(async_client_with_db):
+    await _ensure_env_ready(async_client_with_db)
     fixture = _download_fixture()
     with fixture.open("rb") as handle:
-        response = client_with_db.post(
+        response = await async_client_with_db.post(
             "/api/v1/analyze/",
             files={"image": (fixture.name, handle, "image/png")},
             data={"top_n": 3},
