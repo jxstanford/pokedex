@@ -91,6 +91,11 @@ def map_to_domain(payload: dict, species_payload: dict) -> Pokemon:
         or payload.get("sprites", {}).get("front_default")
         or ""
     )
+    if not image_url.startswith("http"):
+        image_url = (
+            f"https://raw.githubusercontent.com/PokeAPI/"
+            f"sprites/master/sprites/pokemon/other/official-artwork/{payload['id']}.png"
+        )
     stats = payload.get("stats", [])
     stats_model = PokemonStats(
         hp=stats[0]["base_stat"] if len(stats) > 0 else 0,

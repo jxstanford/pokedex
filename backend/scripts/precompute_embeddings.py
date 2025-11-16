@@ -28,9 +28,16 @@ def chunk(items, size):
         yield items[i : i + size]
 
 
+def ensure_image_url(url: str, pokemon_id: int) -> str:
+    if url.startswith("http"):
+        return url
+    return (
+        f"https://raw.githubusercontent.com/PokeAPI/"
+        f"sprites/master/sprites/pokemon/other/official-artwork/{pokemon_id}.png"
+    )
+
+
 async def download_image(client: httpx.AsyncClient, url: str) -> bytes:
-    if not url.startswith("http"):
-        raise ValueError("Image URL missing protocol")
     response = await client.get(url)
     response.raise_for_status()
     return response.content
@@ -48,7 +55,10 @@ async def precompute(limit: int | None = None) -> None:
 
         async with httpx.AsyncClient(timeout=60) as client:
             for group in tqdm(chunk(pokemon, 10), desc="Embedding Pokémon"):
-                tasks = [download_image(client, p.image_url) for p in group]
+                tasks = [
+                    download_image(client, ensure_image_url(p.image_url, p.id))
+                    for p in group
+                ]
                 images = await asyncio.gather(*tasks, return_exceptions=True)
                 for entry, image_data in zip(group, images):
                     if isinstance(image_data, Exception):
