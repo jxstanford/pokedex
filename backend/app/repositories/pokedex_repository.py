@@ -14,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Pokemon, PokemonStats
 from app.models.db import PokemonRecord
+from structlog import get_logger
+
 from app.services.pokemon_matcher import PokemonMatcher
 
 
@@ -25,6 +27,7 @@ class PokedexRepository:
         session: AsyncSession | None = None,
         data_path: Path | None = None,
     ) -> None:
+        self._logger = get_logger(__name__)
         self._session = session
         self.data_path = data_path or Path(__file__).resolve().parent.parent / "data" / "pokemon_seed.json"
         self._pokemon_by_id: Dict[int, Pokemon] = {}
@@ -112,6 +115,7 @@ class PokedexRepository:
         )
         if self._session is None:
             await self._ensure_cache()
+            self._logger.warning("pgvector fallback", reason="no_db_session")
             offline_matches = self._find_matches_offline(embedding, top_n)
             return offline_matches
 
