@@ -10,6 +10,9 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isReady, setIsReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const isCameraSupported = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
 
   useEffect(() => {
     return () => {
@@ -18,17 +21,39 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
     };
   }, [stream]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) {
+      setIsReady(false);
+      return;
+    }
+
+    video.srcObject = stream;
+    const handleLoaded = () => setIsReady(true);
+    video.addEventListener('loadedmetadata', handleLoaded);
+    video.play().catch(() => {
+      setCameraError('Unable to start camera playback.');
+    });
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoaded);
+      video.pause();
+    };
+  }, [stream]);
+
   const requestCamera = useCallback(async () => {
+    if (!isCameraSupported) {
+      setCameraError('Camera access is not supported in this browser.');
+      return;
+    }
     try {
       const nextStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(nextStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = nextStream;
-      }
+      setCameraError(null);
     } catch (err) {
       console.error('Camera access denied', err);
+      setCameraError('Unable to access the camera. Please check permissions.');
     }
-  }, []);
+  }, [isCameraSupported]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !isReady) return;
@@ -69,7 +94,6 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
             autoPlay
             muted
             playsInline
-            onLoadedMetadata={() => setIsReady(true)}
             className="w-full rounded"
           />
           <button
@@ -80,9 +104,12 @@ const CameraCapture = ({ onImageCapture, disabled = false, isCapturing = false }
           >
             {isCapturing ? 'Capturing…' : isReady ? 'Capture Photo' : 'Camera initializing…'}
           </button>
+          {cameraError && <p className="text-sm text-red-500">{cameraError}</p>}
         </div>
       ) : (
-        <p className="text-sm text-slate-600">Allow camera access to capture a new photo.</p>
+        <p className="text-sm text-slate-600">
+          {cameraError || 'Allow camera access to capture a new photo.'}
+        </p>
       )}
     </section>
   );
