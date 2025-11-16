@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "pokemon-vision-backend"
+version = "0.1.0"
+description = "FastAPI backend for the Pokémon Vision experience"
+authors = ["Pokedex Team"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+python-multipart = "^0.0.6"
+httpx = "^0.26.0"
+torch = "^2.1.0"
+transformers = "^4.36.0"
+pillow = "^10.2.0"
+asyncpg = "^0.29.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
+pgvector = "^0.2.4"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+python-jose = "^3.3.0"
+structlog = "^24.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+pytest-asyncio = "^0.23.3"
+httpx = "^0.26.0"
+ruff = "^0.1.14"
+mypy = "^1.7.1"
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+exclude = ["alembic"]

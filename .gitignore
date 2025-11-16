@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.env
+.venv
+poetry.lock
+
+# Virtual envs
+.env*
+.venv*
+
+# Node
+node_modules/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+dist/
+build/
+
+# Expo/React Native
+.expo/
+.expo-shared/
+.DS_Store
+
+# VSCode/JetBrains
+.vscode/
+.idea/
+
+# Coverage & test artifacts
+.coverage
+htmlcov/
+pytest.cache/
+
+# Misc
+*.log
