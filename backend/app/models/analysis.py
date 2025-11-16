@@ -19,7 +19,7 @@ class MatchResult(BaseModel):
         payload = asdict(value)
         embedding = payload.get("embedding")
         if embedding is not None:
-            payload["embedding"] = list(embedding)
+            payload["embedding"] = [float(value) for value in embedding]
         return payload
 
 
