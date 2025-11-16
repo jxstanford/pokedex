@@ -29,6 +29,8 @@ def chunk(items, size):
 
 
 async def download_image(client: httpx.AsyncClient, url: str) -> bytes:
+    if not url.startswith("http"):
+        raise ValueError("Image URL missing protocol")
     response = await client.get(url)
     response.raise_for_status()
     return response.content
@@ -47,8 +49,11 @@ async def precompute(limit: int | None = None) -> None:
         async with httpx.AsyncClient(timeout=60) as client:
             for group in tqdm(chunk(pokemon, 10), desc="Embedding Pokémon"):
                 tasks = [download_image(client, p.image_url) for p in group]
-                images = await asyncio.gather(*tasks)
+                images = await asyncio.gather(*tasks, return_exceptions=True)
                 for entry, image_data in zip(group, images):
+                    if isinstance(image_data, Exception):
+                        print(f"Skipping {entry.name} - {image_data}")
+                        continue
                     embedding = processor.extract_embedding(image_data)
                     await repo.save_embedding(entry.id, embedding, settings.clip_model_name)
         await session.commit()
