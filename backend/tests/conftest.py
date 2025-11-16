@@ -1,5 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
+from httpx import ASGITransport
 
 from app.dependencies import get_pokedex_repository
 from app.main import create_app
@@ -22,3 +24,11 @@ def client() -> TestClient:
 def client_with_db() -> TestClient:
     app = create_app()
     return TestClient(app)
+
+
+@pytest.fixture(scope="session")
+async def async_client_with_db() -> AsyncClient:
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
