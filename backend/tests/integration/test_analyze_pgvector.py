@@ -18,10 +18,13 @@ from app.repositories.pokedex_repository import PokedexRepository
 
 PG_TESTS_ENABLED = os.getenv("PGVECTOR_TESTS") == "1"
 
-pytestmark = pytest.mark.skipif(
-    not PG_TESTS_ENABLED,
-    reason="Set PGVECTOR_TESTS=1 to run pgvector integration tests",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not PG_TESTS_ENABLED,
+        reason="Set PGVECTOR_TESTS=1 to run pgvector integration tests",
+    ),
+    pytest.mark.anyio,
+]
 
 
 async def _ensure_embeddings_present() -> None:
@@ -34,8 +37,8 @@ async def _ensure_embeddings_present() -> None:
             raise AssertionError("Run precompute_embeddings.py before pgvector tests")
 
 
-def test_analyze_pgvector_flow(client_with_db):
-    asyncio.run(_ensure_embeddings_present())
+async def test_analyze_pgvector_flow(client_with_db):
+    await _ensure_embeddings_present()
     fixture = _download_fixture()
     with fixture.open("rb") as handle:
         response = client_with_db.post(
