@@ -20,6 +20,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
 async def _ensure_env_ready(client) -> None:
     response = await client.get("/api/v1/health/")
     assert response.status_code == 200
