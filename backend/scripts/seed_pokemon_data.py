@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import List
 
+import asyncio
 import httpx
 from tqdm import tqdm
 
@@ -24,13 +25,34 @@ from app.repositories.pokedex_repository import PokedexRepository
 settings = get_settings()
 
 
-async def fetch_json(client: httpx.AsyncClient, url: str) -> dict:
-    response = await client.get(url)
-    response.raise_for_status()
-    try:
-        return response.json()
-    except ValueError as exc:
-        raise RuntimeError(f"Failed to decode JSON from {url}") from exc
+async def fetch_json(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    retries: int = 5,
+    backoff_seconds: float = 1.0,
+) -> dict:
+    for attempt in range(retries):
+        try:
+            response = await client.get(url)
+            response.raise_for_status()
+            try:
+                return response.json()
+            except ValueError as exc:
+                raise RuntimeError(f"Failed to decode JSON from {url}") from exc
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            if status == 429 or status >= 500:
+                delay = backoff_seconds * (2**attempt)
+                print(f"HTTP {status} for {url}. Retrying in {delay:.1f}s...")
+                await asyncio.sleep(delay)
+                continue
+            raise
+        except httpx.HTTPError as exc:
+            delay = backoff_seconds * (2**attempt)
+            print(f"Network error '{exc}' for {url}. Retrying in {delay:.1f}s...")
+            await asyncio.sleep(delay)
+    raise RuntimeError(f"Exceeded retries for {url}")
 
 
 def extract_description(species_payload: dict) -> str:
@@ -105,10 +127,19 @@ async def gather_pokemon(limit: int | None = None) -> List[Pokemon]:
             results = results[:limit]
 
         pokemon: List[Pokemon] = []
+        failures: list[str] = []
         for entry in tqdm(results, desc="Downloading Pokémon"):
-            detail = await fetch_json(client, entry["url"])
-            species = await fetch_json(client, detail["species"]["url"])
-            pokemon.append(map_to_domain(detail, species))
+            try:
+                detail = await fetch_json(client, entry["url"])
+                species = await fetch_json(client, detail["species"]["url"])
+                pokemon.append(map_to_domain(detail, species))
+            except Exception as exc:  # noqa: BLE001 - log and continue
+                failures.append(f"{entry.get('name', 'unknown')}: {exc}")
+                print(f"Skipping {entry.get('name', 'unknown')} due to {exc}")
+                continue
+
+        if failures:
+            print(f"Skipped {len(failures)} Pokémon due to errors")
         return pokemon
 
 
