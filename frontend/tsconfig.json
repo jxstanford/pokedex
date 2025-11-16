@@ -5,6 +5,5 @@
     "baseUrl": "./src",
     "types": ["vitest", "vite/client"]
   },
-  "include": ["src", "tests"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src"]
 }
