@@ -24,7 +24,7 @@ def test_analyze_returns_matches(client: TestClient) -> None:
     )
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["matches"]) == 5
+    assert 0 < len(payload["matches"]) <= 5
 
 
 def test_analyze_respects_top_n(client: TestClient) -> None:

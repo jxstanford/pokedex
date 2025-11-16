@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -20,4 +20,4 @@ class AnalysisResult(BaseModel):
     matches: List[MatchResult] = Field(default_factory=list)
     processing_time_ms: int = 0
     model_version: str = "openai/clip-vit-base-patch32"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
