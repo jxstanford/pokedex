@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
+from pathlib import Path
 from typing import List
 
 import httpx
 from tqdm import tqdm
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
 
 from app.config import get_settings
 from app.database import SessionMaker
