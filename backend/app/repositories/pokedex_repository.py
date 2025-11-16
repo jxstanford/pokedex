@@ -203,7 +203,7 @@ class PokedexRepository:
             weight=record.weight or 0.0,
             abilities=record.abilities or [],
             stats=stats,
-            embedding=record.embedding,
+            embedding=list(record.embedding) if record.embedding is not None else None,
         )
 
     def _domain_to_record(self, pokemon: Pokemon) -> PokemonRecord:

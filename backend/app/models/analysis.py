@@ -16,7 +16,11 @@ class MatchResult(BaseModel):
 
     @field_serializer("pokemon")
     def serialize_pokemon(self, value: Pokemon) -> dict:
-        return asdict(value)
+        payload = asdict(value)
+        embedding = payload.get("embedding")
+        if embedding is not None:
+            payload["embedding"] = list(embedding)
+        return payload
 
 
 class AnalysisResult(BaseModel):
