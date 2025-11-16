@@ -6,15 +6,11 @@ precomputed embeddings. Enable by setting PGVECTOR_TESTS=1.
 
 from __future__ import annotations
 
-import asyncio
 import os
 from pathlib import Path
 
 import httpx
 import pytest
-
-from app.database import SessionMaker
-from app.repositories.pokedex_repository import PokedexRepository
 
 PG_TESTS_ENABLED = os.getenv("PGVECTOR_TESTS") == "1"
 
@@ -29,19 +25,17 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-async def _ensure_embeddings_present() -> None:
-    async with SessionMaker() as session:
-        repo = PokedexRepository(session=session)
-        pokemon = await repo.get_all_pokemon()
-        if not pokemon:
-            raise AssertionError("Seed the Pokédex before running pgvector tests")
-        if not any(entry.embedding for entry in pokemon):
-            raise AssertionError("Run precompute_embeddings.py before pgvector tests")
+def _ensure_env_ready(client) -> None:
+    response = client.get("/api/v1/health/")
+    assert response.status_code == 200
+    payload = response.json()
+    pokemon_count = payload["checks"].get("pokemon_count", 0)
+    assert pokemon_count > 0, "Seed data before running pgvector tests"
+    assert payload["checks"].get("clip_model") == "loaded", "CLIP model not loaded"
 
 
-@pytest.mark.anyio
-async def test_analyze_pgvector_flow(client_with_db):
-    await _ensure_embeddings_present()
+def test_analyze_pgvector_flow(client_with_db):
+    _ensure_env_ready(client_with_db)
     fixture = _download_fixture()
     with fixture.open("rb") as handle:
         response = client_with_db.post(
