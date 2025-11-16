@@ -27,7 +27,10 @@ settings = get_settings()
 async def fetch_json(client: httpx.AsyncClient, url: str) -> dict:
     response = await client.get(url)
     response.raise_for_status()
-    return response.json()
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise RuntimeError(f"Failed to decode JSON from {url}") from exc
 
 
 def extract_description(species_payload: dict) -> str:
@@ -96,7 +99,8 @@ async def gather_pokemon(limit: int | None = None) -> List[Pokemon]:
             params={"limit": limit or 2000},
         )
         list_response.raise_for_status()
-        results = list_response.json()["results"]
+        payload = list_response.json()
+        results = payload.get("results", [])
         if limit:
             results = results[:limit]
 
