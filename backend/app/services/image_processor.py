@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
-import hashlib
 import io
-from typing import List
+from typing import List, Optional
 
+import torch
 from PIL import Image, UnidentifiedImageError
+from transformers import CLIPModel, CLIPProcessor
 
 from app.config import get_settings
 
 
 class ImageProcessor:
-    """Validate uploaded files and generate deterministic embeddings for them."""
+    """Validate uploaded files and generate CLIP embeddings."""
+
+    _clip_model: Optional[CLIPModel] = None
+    _clip_processor: Optional[CLIPProcessor] = None
 
     def __init__(self, target_size: int = 224) -> None:
         self.settings = get_settings()
         self.target_size = target_size
+        self._ensure_model_loaded()
 
     def validate_image(self, image_data: bytes, mime_type: str | None) -> None:
         if not image_data:
@@ -38,19 +43,19 @@ class ImageProcessor:
         return buffer.getvalue()
 
     def extract_embedding(self, image_data: bytes) -> List[float]:
-        """Create a repeatable pseudo-embedding until CLIP is wired up."""
-
-        digest = hashlib.sha256(image_data).digest()
-        values: List[float] = []
-        seed = digest
-        while len(values) < 512:
-            seed = hashlib.sha256(seed).digest()
-            values.extend(byte / 255 for byte in seed)
-        trimmed = values[:512]
-        norm = sum(v * v for v in trimmed) ** 0.5 or 1.0
-        return [v / norm for v in trimmed]
+        image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        inputs = self._clip_processor(images=image, return_tensors="pt")
+        with torch.no_grad():
+            embeddings = self._clip_model.get_image_features(**inputs)
+        normalized = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
+        return normalized.squeeze(0).tolist()
 
     def process(self, image_data: bytes, mime_type: str | None) -> List[float]:
         self.validate_image(image_data, mime_type)
         resized = self.resize_image(image_data)
         return self.extract_embedding(resized)
+
+    def _ensure_model_loaded(self) -> None:
+        if ImageProcessor._clip_model is None or ImageProcessor._clip_processor is None:
+            ImageProcessor._clip_processor = CLIPProcessor.from_pretrained(self.settings.clip_model_name)
+            ImageProcessor._clip_model = CLIPModel.from_pretrained(self.settings.clip_model_name)
