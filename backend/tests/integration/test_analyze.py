@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -16,12 +17,12 @@ def _make_image() -> BytesIO:
 
 def test_analyze_returns_matches(client: TestClient) -> None:
     reset_rate_limiter()
-    buffer = _make_image()
-
-    response = client.post(
-        "/api/v1/analyze/",
-        files={"image": ("pikachu.png", buffer, "image/png")},
-    )
+    fixture = Path("tests/fixtures/sample_images/pikachu.png")
+    with fixture.open("rb") as handle:
+        response = client.post(
+            "/api/v1/analyze/",
+            files={"image": (fixture.name, handle, "image/png")},
+        )
     assert response.status_code == 200
     payload = response.json()
     assert 0 < len(payload["matches"]) <= 5

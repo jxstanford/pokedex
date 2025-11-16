@@ -23,6 +23,9 @@ mobile-dev:
 backend-test:
 	cd backend && poetry run pytest
 
+analyze-test:
+	cd backend && poetry run pytest tests/integration/test_analyze.py -k "returns_matches"
+
 frontend-test:
 	cd frontend && npm run test -- --run
 
