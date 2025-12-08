@@ -6,8 +6,12 @@ This guide explains how to reproduce the local environment required for the Pok√
 - Python 3.11+
 - [Poetry](https://python-poetry.org/docs/#installation)
 - Node.js 20+ and npm
+- Bun 1.2+ (frontend)
 - Expo CLI (`npm install -g expo-cli`)
 - Docker (for Postgres + pgvector, optional during Phase 0)
+- OpenSpec + AI helpers:
+  - openspec CLI (`pip install openspec-cli` or `pipx install openspec-cli`)
+  - claude, codex, antigravity, opencode CLIs (global install via npm: `npm install -g claude-cli codex-cli antigravity-cli opencode-cli`, or use their official installers)
 
 ## Bootstrapping
 1. Clone this repository.

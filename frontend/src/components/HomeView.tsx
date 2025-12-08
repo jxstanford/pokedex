@@ -1,6 +1,6 @@
-import { motion } from 'motion/react';
-import { Camera, Upload, Zap } from 'lucide-react';
-import type { ViewMode } from '../App';
+import { motion } from "motion/react";
+import { Camera, Upload, Zap } from "lucide-react";
+import type { ViewMode } from "../types";
 
 interface HomeViewProps {
   onViewChange: (view: ViewMode) => void;

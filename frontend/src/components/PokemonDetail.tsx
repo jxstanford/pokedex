@@ -1,35 +1,37 @@
-import { motion } from 'motion/react';
-import { X, Ruler, Weight, Sparkles, Activity } from 'lucide-react';
-import type { PokemonMatch } from '../types/pokemon';
+import { motion } from "motion/react";
+import { X, Ruler, Weight, Sparkles, Activity, Loader2, TriangleAlert } from "lucide-react";
+import type { PokemonMatch } from "../types";
 
 interface PokemonDetailProps {
   pokemon: PokemonMatch;
   onClose: () => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
-export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
+export function PokemonDetail({ pokemon, onClose, isLoading, error }: PokemonDetailProps) {
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      fighting: 'bg-red-600',
-      dragon: 'bg-purple-600',
-      electric: 'bg-yellow-500',
-      fire: 'bg-orange-600',
-      water: 'bg-blue-600',
-      grass: 'bg-green-600',
-      ice: 'bg-cyan-400',
-      poison: 'bg-purple-700',
-      ground: 'bg-yellow-700',
-      flying: 'bg-indigo-400',
-      psychic: 'bg-pink-600',
-      bug: 'bg-lime-600',
-      rock: 'bg-yellow-800',
-      ghost: 'bg-purple-900',
-      dark: 'bg-gray-800',
-      steel: 'bg-gray-500',
-      fairy: 'bg-pink-400',
-      normal: 'bg-gray-400',
+      fighting: "bg-red-600",
+      dragon: "bg-purple-600",
+      electric: "bg-yellow-500",
+      fire: "bg-orange-600",
+      water: "bg-blue-600",
+      grass: "bg-green-600",
+      ice: "bg-cyan-400",
+      poison: "bg-purple-700",
+      ground: "bg-yellow-700",
+      flying: "bg-indigo-400",
+      psychic: "bg-pink-600",
+      bug: "bg-lime-600",
+      rock: "bg-yellow-800",
+      ghost: "bg-purple-900",
+      dark: "bg-gray-800",
+      steel: "bg-gray-500",
+      fairy: "bg-pink-400",
+      normal: "bg-gray-400",
     };
-    return colors[type.toLowerCase()] || 'bg-gray-500';
+    return colors[type.toLowerCase()] || "bg-gray-500";
   };
 
   const statMax = 200;
@@ -46,24 +48,23 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
         className="w-full max-w-md"
       >
-        {/* Screen bezel for modal */}
         <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-3 shadow-2xl border-4 border-gray-900">
-          {/* Screen */}
           <div className="bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl overflow-hidden relative border-2 border-cyan-500/30">
-            {/* Scan line effect */}
             <div className="absolute inset-0 pointer-events-none z-40 scan-lines opacity-20" />
 
-            {/* Header */}
             <div className="bg-gradient-to-r from-orange-600 to-red-600 p-4 relative overflow-hidden">
-              {/* Digital pattern */}
               <div className="absolute inset-0 opacity-10">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                  backgroundSize: '15px 15px'
-                }} />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                    backgroundSize: "15px 15px",
+                  }}
+                />
               </div>
 
               <button
@@ -77,7 +78,7 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                 <div className="text-xs text-orange-200 mb-1 tracking-wider">POKÉMON DATA</div>
                 <h2 className="text-2xl text-white mb-2 tracking-wide">{pokemon.name}</h2>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {pokemon.types.map(type => (
+                  {pokemon.types.map((type) => (
                     <span
                       key={type}
                       className={`px-3 py-1 ${getTypeColor(type)} text-white rounded-lg border border-white/40 uppercase text-xs tracking-wide`}
@@ -89,8 +90,21 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
               </div>
             </div>
 
-            <div className="p-4 space-y-3 overflow-y-auto max-h-[calc(90vh-250px)] custom-scrollbar">
-              {/* Description */}
+            <div className="p-4 space-y-3 overflow-y-auto max-h-[calc(90vh-250px)] custom-scrollbar relative">
+              {isLoading && (
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2 text-cyan-200">
+                  <Loader2 className="w-10 h-10 animate-spin" />
+                  <span className="text-sm">Refreshing Pokédex entry...</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-500/15 border border-red-400/40 text-red-100 rounded-xl p-3 flex items-center gap-2">
+                  <TriangleAlert className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <div className="bg-gradient-to-br from-slate-800/80 to-slate-700/80 rounded-xl p-3 border border-cyan-500/30">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
@@ -99,7 +113,6 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                 <p className="text-slate-300 text-sm leading-relaxed">{pokemon.description}</p>
               </div>
 
-              {/* Vitals */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-1.5 h-1.5 bg-orange-400 rounded-full" />
@@ -126,12 +139,13 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                       <Activity className="w-3 h-3 text-purple-400" />
                       <span className="text-xs text-purple-300 tracking-wide">GEN</span>
                     </div>
-                    <p className="text-white text-xs font-mono">G{pokemon.generation}</p>
+                    <p className="text-white text-xs font-mono">
+                      {pokemon.generation ? `G${pokemon.generation}` : "—"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Abilities */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
@@ -139,18 +153,21 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                   <h3 className="text-blue-100 text-sm tracking-wider">ABILITIES</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {pokemon.abilities.map((ability, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1.5 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 text-cyan-300 rounded-lg border border-blue-500/30 text-xs tracking-wide"
-                    >
-                      {ability}
-                    </span>
-                  ))}
+                  {pokemon.abilities.length ? (
+                    pokemon.abilities.map((ability, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1.5 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 text-cyan-300 rounded-lg border border-blue-500/30 text-xs tracking-wide"
+                      >
+                        {ability}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 text-sm">No abilities listed.</span>
+                  )}
                 </div>
               </div>
 
-              {/* Stats */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
@@ -159,12 +176,12 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { name: 'HP', value: pokemon.stats.hp, color: 'bg-red-500' },
-                    { name: 'ATK', value: pokemon.stats.attack, color: 'bg-orange-500' },
-                    { name: 'DEF', value: pokemon.stats.defense, color: 'bg-yellow-500' },
-                    { name: 'SPA', value: pokemon.stats.spAttack, color: 'bg-blue-500' },
-                    { name: 'SPD', value: pokemon.stats.spDefense, color: 'bg-green-500' },
-                    { name: 'SPE', value: pokemon.stats.speed, color: 'bg-pink-500' },
+                    { name: "HP", value: pokemon.stats.hp, color: "bg-red-500" },
+                    { name: "ATK", value: pokemon.stats.attack, color: "bg-orange-500" },
+                    { name: "DEF", value: pokemon.stats.defense, color: "bg-yellow-500" },
+                    { name: "SPA", value: pokemon.stats.spAttack, color: "bg-blue-500" },
+                    { name: "SPD", value: pokemon.stats.spDefense, color: "bg-green-500" },
+                    { name: "SPE", value: pokemon.stats.speed, color: "bg-pink-500" },
                   ].map((stat) => (
                     <div key={stat.name} className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
                       <div className="flex items-center gap-2">
@@ -172,11 +189,11 @@ export function PokemonDetail({ pokemon, onClose }: PokemonDetailProps) {
                         <div className="flex-1 h-3 bg-slate-900/80 rounded-full overflow-hidden border border-slate-700">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${(stat.value / statMax) * 100}%` }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                            animate={{ width: `${Math.min((stat.value / statMax) * 100, 100)}%` }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
                             className={`h-full ${stat.color}`}
                             style={{
-                              boxShadow: `0 0 8px ${stat.color.replace('bg-', 'rgba(')}`
+                              boxShadow: "0 0 8px rgba(59, 130, 246, 0.4)",
                             }}
                           />
                         </div>

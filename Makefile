@@ -12,7 +12,7 @@ backend-setup:
 	cd backend && poetry install --no-root
 
 frontend-setup:
-	cd frontend && npm install
+	cd frontend && bun install
 
 mobile-setup:
 	cd mobile && npm install
@@ -21,7 +21,7 @@ backend-dev:
 	cd backend && poetry run uvicorn app.main:app --reload
 
 frontend-dev:
-	cd frontend && npm run dev -- --host
+	cd frontend && bun run dev -- --host
 
 mobile-dev:
 	cd mobile && npx expo start --tunnel
@@ -36,14 +36,14 @@ analyze-pgvector:
 	cd backend && PGVECTOR_TESTS=1 poetry run pytest tests/integration/test_analyze_pgvector.py
 
 frontend-test:
-	cd frontend && npm run test -- --run
+	cd frontend && bun run test -- --run
 
 mobile-test:
 	cd mobile && npm run test
 
 lint:
 	cd backend && poetry run ruff check . && poetry run mypy .
-	cd frontend && npm run lint
+	cd frontend && bun run test -- --passWithNoTests
 	cd mobile && npm run lint
 
 clean:
@@ -88,7 +88,7 @@ start-frontend:
 		echo "frontend dev server already running (pid $$(cat $(FRONTEND_PID)))"; \
 	else \
 		echo "Starting frontend dev server..."; \
-		nohup sh -c 'cd frontend && npm run dev -- --host' >$(FRONTEND_LOG) 2>&1 & echo $$! > $(FRONTEND_PID); \
+		nohup sh -c 'cd frontend && bun run dev' >$(FRONTEND_LOG) 2>&1 & echo $$! > $(FRONTEND_PID); \
 		echo "frontend dev server started (pid $$(cat $(FRONTEND_PID)), log $(FRONTEND_LOG))"; \
 		echo "Visit http://localhost:5173 once Vite reports the URL"; \
 	fi

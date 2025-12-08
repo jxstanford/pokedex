@@ -41,3 +41,9 @@ pytest.cache/
 *.log
 
 backend/app/data/pokemon_images
+
+# Dev servers and AI tool artifacts
+.devservers/*.pid
+.agent/
+.claude/
+.opencode/
