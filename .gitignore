@@ -39,3 +39,5 @@ pytest.cache/
 
 # Misc
 *.log
+
+backend/app/data/pokemon_images

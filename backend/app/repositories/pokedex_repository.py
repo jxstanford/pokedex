@@ -17,6 +17,7 @@ from app.models.db import PokemonRecord
 from structlog import get_logger
 
 from app.services.pokemon_matcher import PokemonMatcher
+from app.utils.pokemon_images import sprite_fallback_url
 
 
 class PokedexRepository:
@@ -26,20 +27,28 @@ class PokedexRepository:
         self,
         session: AsyncSession | None = None,
         data_path: Path | None = None,
+        image_store_dir: Path | None = None,
     ) -> None:
         self._logger = get_logger(__name__)
         self._session = session
-        self.data_path = data_path or Path(__file__).resolve().parent.parent / "data" / "pokemon_seed.json"
+        self.data_path = (
+            data_path
+            or Path(__file__).resolve().parent.parent / "data" / "pokemon_seed.json"
+        )
+        self._image_store_dir = image_store_dir
         self._pokemon_by_id: Dict[int, Pokemon] = {}
         self._lock = asyncio.Lock()
 
     async def get_all_pokemon(self) -> List[Pokemon]:
         await self._ensure_cache()
-        return list(self._pokemon_by_id.values())
+        return [self._with_local_image(pokemon) for pokemon in self._pokemon_by_id.values()]
 
     async def get_pokemon_by_id(self, pokemon_id: int) -> Optional[Pokemon]:
         await self._ensure_cache()
-        return self._pokemon_by_id.get(pokemon_id)
+        pokemon = self._pokemon_by_id.get(pokemon_id)
+        if not pokemon:
+            return None
+        return self._with_local_image(pokemon)
 
     async def add_or_update(self, pokemon: Pokemon) -> None:
         if self._session is None:
@@ -116,16 +125,30 @@ class PokedexRepository:
         if self._session is None:
             await self._ensure_cache()
             self._logger.warning("pgvector fallback", reason="no_db_session")
-            offline_matches = self._find_matches_offline(embedding, top_n)
-            return offline_matches
+            return self._find_matches_offline(embedding, top_n)
 
-        result = await self._session.execute(stmt)
+        try:
+            result = await self._session.execute(stmt)
+        except SQLAlchemyError as exc:
+            self._logger.warning(
+                "pgvector lookup failed; falling back to cache",
+                exc_info=exc,
+            )
+            return await self._find_matches_with_cache(embedding, top_n)
+
         matches: List[Tuple[Pokemon, float]] = []
         for record, distance in result.all():
             pokemon = self._record_to_domain(record)
             similarity = 1.0 - (distance or 0.0)
             matches.append((pokemon, max(0.0, similarity)))
-        return matches
+        if matches:
+            return matches
+
+        self._logger.warning(
+            "pgvector returned no matches; falling back to cache",
+            reason="empty_embedding_set",
+        )
+        return await self._find_matches_with_cache(embedding, top_n)
 
     def _find_matches_offline(
         self,
@@ -135,6 +158,16 @@ class PokedexRepository:
         matcher = PokemonMatcher(list(self._pokemon_by_id.values()))
         matches = matcher.find_best_matches(embedding, top_n=top_n)
         return [(match.pokemon, match.similarity_score) for match in matches]
+
+    async def _find_matches_with_cache(
+        self,
+        embedding: List[float],
+        top_n: int,
+    ) -> List[Tuple[Pokemon, float]]:
+        await self._ensure_cache()
+        if not self._pokemon_by_id:
+            return []
+        return self._find_matches_offline(embedding, top_n)
 
     async def _ensure_cache(self) -> None:
         if self._pokemon_by_id:
@@ -181,12 +214,16 @@ class PokedexRepository:
         embedding = entry.get("embedding")
         if embedding is None:
             embedding = self._embedding_from_seed(entry["name"])
+        local_url = self._local_image_url(entry["id"])
+        image_url = entry.get("image_url", "") or sprite_fallback_url(entry["id"])
+        if local_url:
+            image_url = local_url
         return Pokemon(
             id=entry["id"],
             name=entry["name"],
             types=entry.get("types", []),
             description=entry.get("description", ""),
-            image_url=entry.get("image_url", ""),
+            image_url=image_url,
             generation=entry.get("generation", 0),
             height=entry.get("height", 0.0),
             weight=entry.get("weight", 0.0),
@@ -204,12 +241,13 @@ class PokedexRepository:
             special_defense=record.special_defense or 0,
             speed=record.speed or 0,
         )
+        local_url = self._local_image_url(record.id)
         return Pokemon(
             id=record.id,
             name=record.name,
             types=record.types or [],
             description=record.description or "",
-            image_url=record.image_url,
+            image_url=local_url or record.image_url or sprite_fallback_url(record.id),
             generation=record.generation,
             height=record.height or 0.0,
             weight=record.weight or 0.0,
@@ -248,3 +286,18 @@ class PokedexRepository:
         trimmed = values[:512]
         norm = sum(v * v for v in trimmed) ** 0.5 or 1.0
         return [v / norm for v in trimmed]
+
+    def _local_image_url(self, pokemon_id: int) -> str | None:
+        from app.utils.pokemon_images import local_image_path, local_image_url, image_store_dir
+
+        path = local_image_path(pokemon_id, root=self._image_store_dir or image_store_dir())
+        if path.exists():
+            return local_image_url(pokemon_id)
+        return None
+
+    def _with_local_image(self, pokemon: Pokemon) -> Pokemon:
+        local_url = self._local_image_url(pokemon.id)
+        if local_url and pokemon.image_url != local_url:
+            pokemon.image_url = local_url
+            self._pokemon_by_id[pokemon.id] = pokemon
+        return pokemon

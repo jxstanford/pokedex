@@ -2,8 +2,18 @@
   "extends": "./tsconfig.node.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "baseUrl": "./src",
-    "types": ["vitest", "vite/client"]
+    "baseUrl": "./",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "vitest",
+      "vite/client"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

@@ -19,6 +19,12 @@ from app.config import get_settings
 from app.database import SessionMaker
 from app.repositories.pokedex_repository import PokedexRepository
 from app.services.image_processor import ImageProcessor
+from app.utils.pokemon_images import (
+    image_store_dir,
+    local_image_path,
+    persist_image_bytes,
+    sprite_fallback_url,
+)
 
 settings = get_settings()
 
@@ -29,12 +35,9 @@ def chunk(items, size):
 
 
 def ensure_image_url(url: str, pokemon_id: int) -> str:
-    if url.startswith("http"):
+    if url and url.startswith("http"):
         return url
-    return (
-        f"https://raw.githubusercontent.com/PokeAPI/"
-        f"sprites/master/sprites/pokemon/other/official-artwork/{pokemon_id}.png"
-    )
+    return sprite_fallback_url(pokemon_id)
 
 
 async def download_image(client: httpx.AsyncClient, url: str) -> bytes:
@@ -53,17 +56,23 @@ async def precompute(limit: int | None = None) -> None:
         if not pokemon:
             raise RuntimeError("No Pokémon records available. Run seed_pokemon_data.py first.")
 
+        store_dir = image_store_dir()
         async with httpx.AsyncClient(timeout=60) as client:
             for group in tqdm(chunk(pokemon, 10), desc="Embedding Pokémon"):
-                tasks = [
-                    download_image(client, ensure_image_url(p.image_url, p.id))
-                    for p in group
-                ]
-                images = await asyncio.gather(*tasks, return_exceptions=True)
+                images: list[bytes | Exception] = []
+                for entry in group:
+                    local_path = local_image_path(entry.id, root=store_dir)
+                    if local_path.exists():
+                        images.append(local_path.read_bytes())
+                        continue
+                    images.append(
+                        await download_image(client, ensure_image_url(entry.image_url, entry.id))
+                    )
                 for entry, image_data in zip(group, images):
                     if isinstance(image_data, Exception):
                         print(f"Skipping {entry.name} - {image_data}")
                         continue
+                    persist_image_bytes(image_data, entry.id, root=store_dir)
                     embedding = processor.extract_embedding(image_data)
                     await repo.save_embedding(entry.id, embedding, settings.clip_model_name)
         await session.commit()

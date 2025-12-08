@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import List
 
-import asyncio
 import httpx
 from tqdm import tqdm
 
@@ -21,6 +20,7 @@ from app.config import get_settings
 from app.database import SessionMaker
 from app.models import Pokemon, PokemonStats
 from app.repositories.pokedex_repository import PokedexRepository
+from app.utils.pokemon_images import choose_image_url
 
 settings = get_settings()
 
@@ -83,19 +83,11 @@ def parse_generation(species_payload: dict) -> int:
 
 def map_to_domain(payload: dict, species_payload: dict) -> Pokemon:
     description = extract_description(species_payload)
-    image_url = (
-        payload.get("sprites", {})
-        .get("other", {})
-        .get("official-artwork", {})
-        .get("front_default")
-        or payload.get("sprites", {}).get("front_default")
-        or ""
+    image_url = choose_image_url(
+        payload.get("sprites", {}),
+        species_id=species_payload.get("id"),
+        pokemon_id=payload["id"],
     )
-    if not image_url.startswith("http"):
-        image_url = (
-            f"https://raw.githubusercontent.com/PokeAPI/"
-            f"sprites/master/sprites/pokemon/other/official-artwork/{payload['id']}.png"
-        )
     stats = payload.get("stats", [])
     stats_model = PokemonStats(
         hp=stats[0]["base_stat"] if len(stats) > 0 else 0,

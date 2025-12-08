@@ -23,15 +23,43 @@ export interface PokemonDetail extends PokemonSummary {
   generation?: number;
 }
 
-export interface PokemonMatch {
+export interface ApiPokemonMatch {
   pokemon: PokemonSummary;
   similarity_score: number;
   rank: number;
 }
 
+export interface PokemonMatch {
+  id: string;
+  name: string;
+  similarity: number;
+  types: string[];
+  imageUrl?: string;
+  description: string;
+  height: string;
+  weight: string;
+  generation: number;
+  abilities: string[];
+  stats: {
+    hp: number;
+    attack: number;
+    defense: number;
+    spAttack: number;
+    spDefense: number;
+    speed: number;
+  };
+}
+
+export interface Analysis {
+  id: string;
+  pokemonName: string;
+  timestamp: Date;
+  imageUrl?: string;
+}
+
 export interface AnalysisResponse {
   id: string;
-  matches: PokemonMatch[];
+  matches: ApiPokemonMatch[];
   processing_time_ms: number;
   model_version: string;
   created_at: string;
