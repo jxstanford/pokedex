@@ -3,10 +3,11 @@ import type { ApiAnalysisResult, ApiPokemon } from "../types";
 export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-const rawBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api/v1";
+const rawBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
 const API_BASE = rawBase.replace(/\/$/, "");
 
-const withBase = (path: string) => `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+const withBase = (path: string) =>
+  `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`.replace(/\/+/, "/");
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
