@@ -1,4 +1,4 @@
-.PHONY: bootstrap backend-setup frontend-setup mobile-setup backend-dev frontend-dev mobile-dev backend-test frontend-test mobile-test lint clean start stop restart start-backend start-frontend stop-backend stop-frontend backend-seed backend-embed
+.PHONY: bootstrap backend-setup frontend-setup mobile-setup backend-dev frontend-dev mobile-dev backend-test frontend-test mobile-test lint clean stop restart start-backend start-frontend stop-backend stop-frontend backend-seed backend-embed
 
 DEV_DIR := .devservers
 BACKEND_PID := $(DEV_DIR)/backend.pid
@@ -54,23 +54,6 @@ backend-seed:
 
 backend-embed:
 	cd backend && poetry run python scripts/precompute_embeddings.py
-
-start: start-backend start-frontend
-	@echo "Frontend UI: http://localhost:5173 (see $(FRONTEND_LOG) if Vite picks a different port)"; \
-	printf "Open the UI at http://localhost:5173? [Y/n] "; \
-	read -r reply; \
-	reply=$${reply:-Y}; \
-	case "$$(printf '%s' "$$reply" | tr 'A-Z' 'a-z')" in \
-		y|yes) \
-			if command -v open >/dev/null 2>&1; then \
-				open "http://localhost:5173"; \
-			elif command -v xdg-open >/dev/null 2>&1; then \
-				xdg-open "http://localhost:5173"; \
-			else \
-				echo "Please open http://localhost:5173 manually (no opener found)"; \
-			fi ;; \
-		*) echo "Skipping browser launch."; \
-	esac
 
 start-backend:
 	@mkdir -p $(DEV_DIR)

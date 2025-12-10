@@ -19,7 +19,10 @@ This repository hosts the backend, frontend, mobile, and documentation assets fo
    poetry run python scripts/seed_pokemon_data.py --limit 151   # optional limit during development
    poetry run python scripts/precompute_embeddings.py
    ```
-5. Use `make backend-dev`, `make frontend-dev`, or `make mobile-dev` to run each target in watch mode.
+5. Run services in separate terminals:
+   - Terminal A: `make backend-dev` (API at http://localhost:8000)
+   - Terminal B: `make frontend-dev` (UI at http://localhost:5173, proxied to the API)
+   - Terminal C (optional): `make mobile-dev`
 
 ## Testing
 - `make analyze-test`: Exercises `/api/v1/analyze` using the in-memory fallback data.

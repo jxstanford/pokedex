@@ -20,9 +20,10 @@ This guide explains how to reproduce the local environment required for the Pok√
 4. Copy `.env.example` (coming soon) into `.env` files for each project and fill in secrets.
 
 ## Running Services
-- `make backend-dev`: Starts FastAPI with reload at `http://localhost:8000`.
-- `make frontend-dev`: Starts Vite dev server with React app (`http://localhost:5173`).
-- `make mobile-dev`: Launches Expo for the iOS/Android preview.
+- Run in separate terminals:
+  - `make backend-dev`: FastAPI with reload at `http://localhost:8000`.
+  - `make frontend-dev`: Vite dev server at `http://localhost:5173` (proxies `/api` to the backend).
+  - `make mobile-dev`: Launches Expo for the iOS/Android preview (optional).
 
 ## Database
 1. Start PostgreSQL 15+ locally (or via Docker) with the `pgvector` extension enabled.
