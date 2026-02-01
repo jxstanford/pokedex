@@ -32,8 +32,7 @@ class PokedexRepository:
         self._logger = get_logger(__name__)
         self._session = session
         self.data_path = (
-            data_path
-            or Path(__file__).resolve().parent.parent / "data" / "pokemon_seed.json"
+            data_path or Path(__file__).resolve().parent.parent / "data" / "pokemon_seed.json"
         )
         self._image_store_dir = image_store_dir
         self._pokemon_by_id: Dict[int, Pokemon] = {}
@@ -224,6 +223,7 @@ class PokedexRepository:
             types=entry.get("types", []),
             description=entry.get("description", ""),
             image_url=image_url,
+            genus=entry.get("genus", ""),
             generation=entry.get("generation", 0),
             height=entry.get("height", 0.0),
             weight=entry.get("weight", 0.0),
@@ -248,12 +248,15 @@ class PokedexRepository:
             types=record.types or [],
             description=record.description or "",
             image_url=local_url or record.image_url or sprite_fallback_url(record.id),
+            genus=record.genus or "",
             generation=record.generation,
             height=record.height or 0.0,
             weight=record.weight or 0.0,
             abilities=record.abilities or [],
             stats=stats,
-            embedding=list(record.embedding) if record.embedding is not None else None,
+            embedding=[float(x) for x in record.embedding]
+            if record.embedding is not None
+            else None,
         )
 
     def _domain_to_record(self, pokemon: Pokemon) -> PokemonRecord:
@@ -263,6 +266,7 @@ class PokedexRepository:
             types=pokemon.types,
             description=pokemon.description,
             image_url=pokemon.image_url,
+            genus=pokemon.genus,
             generation=pokemon.generation,
             height=pokemon.height,
             weight=pokemon.weight,
@@ -288,11 +292,14 @@ class PokedexRepository:
         return [v / norm for v in trimmed]
 
     def _local_image_url(self, pokemon_id: int) -> str | None:
-        from app.utils.pokemon_images import local_image_path, local_image_url, image_store_dir
-
-        path = local_image_path(pokemon_id, root=self._image_store_dir or image_store_dir())
-        if path.exists():
-            return local_image_url(pokemon_id)
+        # Local images require same-origin serving which doesn't work with
+        # separate frontend/backend dev servers. Use external sprites instead.
+        # To re-enable local images, uncomment the code below.
+        #
+        # from app.utils.pokemon_images import local_image_path, local_image_url, image_store_dir
+        # path = local_image_path(pokemon_id, root=self._image_store_dir or image_store_dir())
+        # if path.exists():
+        #     return local_image_url(pokemon_id)
         return None
 
     def _with_local_image(self, pokemon: Pokemon) -> Pokemon:

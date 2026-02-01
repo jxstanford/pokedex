@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="topGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b"/>
+      <stop offset="100%" style="stop-color:#ee5a5a"/>
+    </linearGradient>
+    <linearGradient id="botGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#f0f0f0"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer circle -->
+  <circle cx="50" cy="50" r="48" fill="#333" stroke="#222" stroke-width="2"/>
+  <!-- Top half (red) -->
+  <path d="M 50 2 A 48 48 0 0 1 98 50 L 2 50 A 48 48 0 0 1 50 2" fill="url(#topGrad)"/>
+  <!-- Bottom half (white) -->
+  <path d="M 50 98 A 48 48 0 0 1 2 50 L 98 50 A 48 48 0 0 1 50 98" fill="url(#botGrad)"/>
+  <!-- Center band -->
+  <rect x="2" y="45" width="96" height="10" fill="#333"/>
+  <!-- Center button outer -->
+  <circle cx="50" cy="50" r="16" fill="#333"/>
+  <!-- Center button inner -->
+  <circle cx="50" cy="50" r="10" fill="#fff"/>
+  <!-- Shine effect -->
+  <ellipse cx="35" cy="30" rx="12" ry="8" fill="rgba(255,255,255,0.3)" transform="rotate(-30 35 30)"/>
+</svg>

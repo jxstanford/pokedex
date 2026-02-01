@@ -1,5 +1,7 @@
 """Pokémon metadata endpoints."""
 
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_pokedex_repository
@@ -7,6 +9,15 @@ from app.models import Pokemon
 from app.repositories.pokedex_repository import PokedexRepository
 
 router = APIRouter(prefix="/pokemon", tags=["pokemon"])
+
+
+@router.get("", response_model=List[Pokemon])
+async def list_pokemon(
+    repository: PokedexRepository = Depends(get_pokedex_repository),
+) -> List[Pokemon]:
+    """List all Pokémon in the database."""
+    return await repository.get_all_pokemon()
+
 
 @router.get("/{pokemon_id}", response_model=Pokemon)
 async def get_pokemon(

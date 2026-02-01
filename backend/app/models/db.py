@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID as PyUUID
+from uuid import uuid4
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, Float, Integer, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY, INET, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, INET
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -24,6 +26,7 @@ class PokemonRecord(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     types: Mapped[List[str]] = mapped_column(ARRAY(String(32)), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")
+    genus: Mapped[str | None] = mapped_column(String(100))
     image_url: Mapped[str] = mapped_column(Text, nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
     height: Mapped[float | None] = mapped_column(Float)
@@ -48,7 +51,7 @@ class PokemonRecord(Base):
 class AnalysisRequestRecord(Base):
     __tablename__ = "analysis_requests"
 
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True, default=uuid4)
     ip_address: Mapped[str | None] = mapped_column(INET)
     user_agent: Mapped[str | None] = mapped_column(Text)
     processing_time_ms: Mapped[int | None] = mapped_column(Integer)

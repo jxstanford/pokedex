@@ -63,6 +63,13 @@ def extract_description(species_payload: dict) -> str:
     return ""
 
 
+def extract_genus(species_payload: dict) -> str:
+    for genus_entry in species_payload.get("genera", []):
+        if genus_entry.get("language", {}).get("name") == "en":
+            return genus_entry.get("genus", "")
+    return ""
+
+
 def parse_generation(species_payload: dict) -> int:
     generation_name = species_payload.get("generation", {}).get("name", "generation-i")
     parts = generation_name.split("-")
@@ -103,6 +110,7 @@ def map_to_domain(payload: dict, species_payload: dict) -> Pokemon:
         types=[entry["type"]["name"] for entry in payload["types"]],
         description=description,
         image_url=image_url,
+        genus=extract_genus(species_payload),
         generation=parse_generation(species_payload),
         height=payload.get("height", 0) / 10,
         weight=payload.get("weight", 0) / 10,

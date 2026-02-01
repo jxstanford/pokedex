@@ -19,6 +19,7 @@ class Pokemon:
     types: List[str]
     description: str = ""
     image_url: str = ""
+    genus: str = ""
     generation: int = 0
     height: float = 0
     weight: float = 0
